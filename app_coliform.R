@@ -23,8 +23,8 @@ library(leaflet)
 # shiny::reactlogShow() #run this line in the console AFTER running and then closing the app
 # these two lines of code will give you the reactive graph for your app
 
-source("connectDC.r") #how we are connecting to the SQL server
-source("functionsDC.r") #defines several functions we are using here
+source("connect_coliform.r") #how we are connecting to the SQL server
+source("functions_coliform.r") #defines several functions we are using here
 
 #some data sources we need for the map tab:
 pws <- st_read("C:/Users/DCantrell/Desktop/pws_shapefiles/water_systems_all.shp")

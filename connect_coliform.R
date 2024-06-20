@@ -15,8 +15,8 @@ rm(list=ls())
 
 sdwis_tdt  <- dbConnect(odbc(),
            Driver = "SQL Server",
-           Server = "WB-GC-SQL-REP-P, 1541",
-           database = "SDWIS")
+           Server = "WB-GC-SQL-T02\\DDW",
+           database = "SDWIS32")
 
 
 
