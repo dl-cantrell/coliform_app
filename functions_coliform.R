@@ -21,8 +21,10 @@ def_end <- date(sprintf("%d-%02d-%02d", year(today()), previous_mo, days_in_mont
 water_systems <- function() {
   # sdwis base query --------------------------------------------------------
   sdwis_base <- dbGetQuery(
-    sdwis,
-    "SELECT DISTINCT TINWSYS.NAME as 'water_system_name', TRIM(TINWSYS.NUMBER0) as 'water_system_no', TINWSYS.ACTIVITY_STATUS_CD, srvCon.SumofSVC_CONNECT_CNT, TINWSYS.D_PWS_FED_TYPE_CD,
+    sdwis_tdt,
+    "
+     
+    SELECT DISTINCT TINWSYS.NAME as 'water_system_name', TRIM(TINWSYS.NUMBER0) as 'water_system_no', TINWSYS.ACTIVITY_STATUS_CD, srvCon.SumofSVC_CONNECT_CNT, TINWSYS.D_PWS_FED_TYPE_CD,
                                TINLGENT.NAME AS Regulating_Agency                                          
                             FROM (SELECT TINSCC.TINWSYS_IS_NUMBER, Sum(TINSCC.SVC_CONNECT_CNT) AS SumOfSVC_CONNECT_CNT 
                             		  FROM TINSCC GROUP BY TINSCC.TINWSYS_IS_NUMBER) AS srvCon
@@ -33,18 +35,15 @@ water_systems <- function() {
                                    and (tinlgent.name like 'District%' or tinlgent.name like 'LPA%')
                              
                             WHERE TINWSYS.ACTIVITY_STATUS_CD = 'A'
-							 and TINWSYS.D_PWS_FED_TYPE_CD <> 'NP'
+							 --and TINWSYS.D_PWS_FED_TYPE_CD <> 'NP'
 						ORDER BY TINWSYS.NAME"
   )
 }
 
 
-# sdwis dbp query ------------------------------------------------------------------------------
+# sdwis coli query ------------------------------------------------------------------------------
 get_coli <- function(system, start_year, end_year) {
-  coli_query <- "use SDWIS32
-go
-
-with coliform_data as
+  coli_query <- "with coliform_data as
 	(
 	select distinct
 	tinlgent.NAME										as 'Regulating Agency',
@@ -62,7 +61,7 @@ with coliform_data as
 	tinwsf.TYPE_CODE									as 'Facility Type',
 	tinwsf.ACTIVITY_STATUS_CD							as 'Facility Status',
 	tsasampl.TYPE_CODE									as 'Sample Type',
-	format(tsasampl.COLLLECTION_END_DT, 'yyyy-MM-dd')	as 'Sample Date', 
+	format(tsasampl.COLLLECTION_END_DT, 'yyyy-MM-dd')	as 'sample_date', 
 	case
 		when tsasampl.COLLCTN_END_TIME is null
 		then 'NULL'
@@ -81,9 +80,9 @@ with coliform_data as
 		else format(tsasar.ANALYSIS_COMPL_DT, 'yyyy-MM-dd')
 		end												as 'Analysis Date',
 	tsaanlyt.CODE										as 'Analyte Code',
-	trim(tsaanlyt.NAME)									as 'Analyte Name',
+	trim(tsaanlyt.NAME)									as 'analyte_name',
 	--tsasar.MICRO_RSLT_IND								as 'Microbial Result?', --Not sure how helpful this field is
-	tsamar.PRESENCE_IND_CODE							as 'Present?',
+	tsamar.PRESENCE_IND_CODE							as 'presence',
 	tsamar.COUNT_TYPE									as 'Count Type',
 	tsamar.COUNT_QTY									as 'Count',
 	tsamar.COUNT_UOM_CODE								as 'Count UOM',
@@ -134,13 +133,16 @@ from coliform_data"
   #which will return a query with the ?system filled in
   #the value for "system" comes from what pws_no the user chooses in the UI
 
-  # Interpolate the SQL query with parameters
-  interpolated_query <- sqlInterpolate(sdwis, coli_query, sys = system)
+#system = "CA1910002"
+#start_year = 2020
+#end_year = 2024
+    # Interpolate the SQL query with parameters
+  interpolated_query <- sqlInterpolate(sdwis_tdt, coli_query)
 
       # Execute the query, with the filled in ?system from the step above
-  dbp_df <- as_tibble(dbGetQuery(sdwis, interpolated_query)) %>%
-       # Add a column for year
-    mutate(year = ymd(substr(collection_date, 1, 4), truncated = 2L)) %>%
+  coli_df <- as_tibble(dbGetQuery(sdwis_tdt, interpolated_query)) %>%
+      # Add a column for year
+    mutate(year = ymd(substr(sample_date, 1, 4), truncated = 2L)) %>%
     filter(year >= start_year & year <= end_year )
   # Select only rows within the year of of interest
 }
