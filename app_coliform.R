@@ -1,4 +1,3 @@
-library(shiny)
 library(tidyverse)
 library(DBI)
 library(DT)
@@ -105,7 +104,12 @@ ui <- fluidPage(  #fluid page makes the pages dynamically expand to take up the 
                  tags$hr(),
                  
                  textOutput("selected_var")
-               )
+               ),
+               
+               #map tab--------------------------------------------
+               tabPanel( "Water System Numbers",
+                         withSpinner (leafletOutput("map", width = "100%", height = "800px"))  #adjust height and width of plot here
+               ) 
   ) )
 
 
@@ -172,10 +176,11 @@ server <- function(input, output, session) {
   # plot time series
   output$ts_plot <- renderPlotly({
     req(nrow(yr_sys_coli()) > 0) # Ensure there are rows in the dataset
-    p <- ggplot(yr_sys_coli(), aes(x = as.Date(sample_date), fill = presence, text = paste("Date:", sample_date, "<br>Presence:", presence))) +
+    
+    p <- ggplot(yr_sys_coli(), aes(x = as.Date(sample_date),  fill = presence, text = paste("Date:", sample_date, "<br>Presence:", presence))) +
       scale_fill_manual(values = c("deepskyblue3", "red") ) +
       facet_wrap(~analyte_name) +
-      geom_bar(stat = "count") +
+      geom_bar(width = 12, stat = "count" ) + # Adjust the width here
       scale_x_date(date_breaks = "1 month", date_labels = "%m/%y") +
       xlab("Month and Year") +
       ylab("Count")
@@ -225,15 +230,50 @@ server <- function(input, output, session) {
     nrow(yr_sys_coli()) == 0
   })
   outputOptions(output, "noDataMsg", suspendWhenHidden = FALSE) 
+  
+  
+  ######################################################################################################################
+  #Plot Map
+  
+  
+  
+  
+  output$map <- renderLeaflet({
+    
+    leaflet() %>% 
+      addTiles() %>%
+      setMaxBounds( lng1 = -125.0
+                    , lat1 = 28.5
+                    , lng2 = -114.0
+                    , lat2 = 44.0 ) %>%
+      addPolygons(data = counties_utm,
+                  fillColor = "transparent",
+                  fillOpacity = 0,
+                  color = "black",
+                  layerId = ~NAME,  
+                  popup = ~paste("County Name:", NAME)) %>% 
+      # addProviderTiles("Stamen.Toner") %>% 
+      addPolygons(data = pws, 
+                  fillColor = "aliceblue", 
+                  color = "darkblue",
+                  layerId = ~pwsid,
+                  popup = ~paste("PWSID:", pwsid))
+    
+  })
+  
+  outputOptions(output, "map", suspendWhenHidden = FALSE)  #important note- we need this option. otherwise, if you start to mess with 
+  #the first two tabs before the map is loaded, it messes up the loading of the map!!!
+  
+  
+  
 }
 
 shinyApp(ui, server)
-  
-  
-  
+
+
+
 
 
 
 
 shinyApp(ui = ui, server = server)
-
