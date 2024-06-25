@@ -46,55 +46,56 @@ get_coli <- function(system, start_year, end_year) {
   coli_query <- "with coliform_data as
 	(
 	select distinct
-	tinlgent.NAME										as 'Regulating Agency',
-	trim(tinwsys.NUMBER0)								as 'Water System Number',
-	tinwsys.NAME										as 'Water System Name',
-	tinwsys.ACTIVITY_STATUS_CD							as 'System Status',
-	trim(tinwsys.D_PWS_FED_TYPE_CD)						as 'Water System Classification',
-	tinwsys.D_PRIN_CNTY_SVD_NM							as 'Principal County Served',
-	tinwsys.D_POPULATION_COUNT							as 'Population Served',
-	scc.SVC_CONNECT_ALL									as 'Service Connections',
+	tinlgent.NAME										as 'regulating_agency',
+	trim(tinwsys.NUMBER0)								as 'water_system_number',
+	tinwsys.NAME										as 'water_system_name',
+	tinwsys.ACTIVITY_STATUS_CD							as 'system_status',
+	trim(tinwsys.D_PWS_FED_TYPE_CD)						as 'water_system_classification',
+	tinwsys.D_PRIN_CNTY_SVD_NM							as 'principal_county_served',
+	tinwsys.D_POPULATION_COUNT							as 'population_served',
+	scc.SVC_CONNECT_ALL									as 'service_connections',
 	concat(trim(tinwsys.NUMBER0),'_',
 		(tinwsf.ST_ASGN_IDENT_CD),'_',
-		trim(tsasmppt.IDENTIFICATION_CD))				as 'PS Code',
-	tsasmppt.DESCRIPTION_TEXT							as 'Sampling Point Name',
-	tinwsf.TYPE_CODE									as 'Facility Type',
-	tinwsf.ACTIVITY_STATUS_CD							as 'Facility Status',
-	tsasampl.TYPE_CODE									as 'Sample Type',
+		trim(tsasmppt.IDENTIFICATION_CD))				as 'ps_code',
+	tsasmppt.DESCRIPTION_TEXT							as 'sampling_point_name',
+	tinwsf.TYPE_CODE									as 'facility_type',
+	tinwsf.ACTIVITY_STATUS_CD							as 'facility_status',
+	tsasampl.TYPE_CODE									as 'sample_type',
 	format(tsasampl.COLLLECTION_END_DT, 'yyyy-MM-dd')	as 'sample_date', 
 	case
 		when tsasampl.COLLCTN_END_TIME is null
 		then 'NULL'
 		else convert(varchar,tsasampl.COLLCTN_END_TIME, 108)
-		end												as 'Sample Time',
-	tsasampl.COLLECTION_ADDRESS 'Sample Address',
-	tsamcsmp.FF_CHLOR_RES_MSR 'Free Cl',
-	tsamcsmp.FLDTOT_CHL_RES_MSR 'Tot Cl',
-	tsamcsmp.FIELD_PH_MEASURE 'pH',
-	tsamcsmp.FIELD_TEMP_MSR 'Temp',
-	tsamcsmp.TEMP_MEAS_TYPE_CD 'Temp Units',
-	tsamcsmp.FIELD_TURBID_MSR 'Turbidity',
+		end												as 'sample_time',
+	tsasampl.COLLECTION_ADDRESS 'sample_address',
+	tsamcsmp.FF_CHLOR_RES_MSR 'free_cl',
+	tsamcsmp.FLDTOT_CHL_RES_MSR 'tot_cl',
+	tsamcsmp.FIELD_PH_MEASURE 'ph',
+	tsamcsmp.FIELD_TEMP_MSR 'temp',
+	tsamcsmp.TEMP_MEAS_TYPE_CD 'temp_units',
+	tsamcsmp.FIELD_TURBID_MSR 'turbidity',
 	case
 		when tsasar.ANALYSIS_COMPL_DT is null
 		then format(tsasar.ANALYSIS_START_DT, 'yyyy-MM-dd')
 		else format(tsasar.ANALYSIS_COMPL_DT, 'yyyy-MM-dd')
-		end												as 'Analysis Date',
-	tsaanlyt.CODE										as 'Analyte Code',
+		end												as 'analysis_date',
+	tsaanlyt.CODE										as 'analyte_code',
 	trim(tsaanlyt.NAME)									as 'analyte_name',
 	--tsasar.MICRO_RSLT_IND								as 'Microbial Result?', --Not sure how helpful this field is
 	tsamar.PRESENCE_IND_CODE							as 'presence',
-	tsamar.COUNT_TYPE									as 'Count Type',
-	tsamar.COUNT_QTY									as 'Count',
-	tsamar.COUNT_UOM_CODE								as 'Count UOM',
-	tsamar.TEST_TYPE									as 'Test Type', --Need to explore this field, do we need?
-	tsasampl.LAB_ASGND_ID_NUM							as 'Lab Sample ID',
-	trim(tsalab.LAB_ID_NUMBER)							as 'ELAP Cert#',
-	labnm.NAME											as 'Lab Name',
-	tsasmn.CODE											as 'Method',
+	tsamar.COUNT_TYPE									as 'count_type',
+	tsamar.COUNT_QTY									as 'count',
+	tsamar.COUNT_UOM_CODE								as 'count_uom',
+	tsamar.TEST_TYPE									as 'test_type', --Need to explore this field, do we need?
+	tsasampl.LAB_ASGND_ID_NUM							as 'lab_sample_id',
+	trim(tsalab.LAB_ID_NUMBER)							as 'elap_cert_num',
+	labnm.NAME											as 'lab_name',
+	tsasmn.CODE											as 'method',
 	tsasar.D_INITIAL_USERID
 
 	from tinwsys 
 	inner join tinwsf on tinwsf.TINWSYS_IS_NUMBER = tinwsys.TINWSYS_IS_NUMBER
+	 AND TINWSYS.NUMBER0 = ?sys
 	inner join tsasmppt on tsasmppt.TINWSF0IS_NUMBER = tinwsf.TINWSF_IS_NUMBER
 		and tsasmppt.IDENTIFICATION_CD = 'RTCR' --select PS Codes for RTCR data
 	inner join tsasampl on tsasampl.TSASMPPT_IS_NUMBER = tsasmppt.TSASMPPT_IS_NUMBER
@@ -115,7 +116,7 @@ get_coli <- function(system, start_year, end_year) {
 	left join
 		(select 
 			TINWSYS_IS_NUMBER, 
-			sum(SVC_CONNECT_CNT) 'SVC_CONNECT_ALL'
+			sum(SVC_CONNECT_CNT) 'svc_connect_all'
 		from tinscc 
 		group by TINWSYS_IS_NUMBER
 		) scc on scc.TINWSYS_IS_NUMBER = tinwsys.TINWSYS_IS_NUMBER
@@ -126,20 +127,17 @@ get_coli <- function(system, start_year, end_year) {
 	)
 
 select *
-from coliform_data"
+from coliform_data
+order by sample_date"
   
   #the ?system bit in the above query is flagging that spot as a placeholder, and we tell the query which 
   #pws system we want to use for that placeholder in the sqlInterpolate command
   #which will return a query with the ?system filled in
   #the value for "system" comes from what pws_no the user chooses in the UI
 
-#system = "CA1910002"
-#start_year = 2020
-#end_year = 2024
     # Interpolate the SQL query with parameters
-  interpolated_query <- sqlInterpolate(sdwis_tdt, coli_query)
-
-      # Execute the query, with the filled in ?system from the step above
+  interpolated_query <- sqlInterpolate(sdwis_tdt, coli_query, sys = system)
+    # Execute the query, with the filled in ?system from the step above
   coli_df <- as_tibble(dbGetQuery(sdwis_tdt, interpolated_query)) %>%
       # Add a column for year
     mutate(year = ymd(substr(sample_date, 1, 4), truncated = 2L)) %>%
