@@ -43,7 +43,8 @@ water_systems <- function() {
 
 # sdwis coli query ------------------------------------------------------------------------------
 get_coli <- function(system, start_year, end_year) {
-  coli_query <- "with coliform_data as
+  coli_query <- "
+with coliform_data as
 	(
 	select distinct
 	tinlgent.NAME										as 'regulating_agency',
@@ -83,10 +84,10 @@ get_coli <- function(system, start_year, end_year) {
 	trim(tsaanlyt.NAME)									as 'analyte_name',
 	--tsasar.MICRO_RSLT_IND								as 'Microbial Result?', --Not sure how helpful this field is
 	tsamar.PRESENCE_IND_CODE							as 'presence',
-	tsamar.COUNT_TYPE									as 'count_type',
+	--tsamar.COUNT_TYPE									as 'count_type',
 	tsamar.COUNT_QTY									as 'count',
-	tsamar.COUNT_UOM_CODE								as 'count_uom',
-	tsamar.TEST_TYPE									as 'test_type', --Need to explore this field, do we need?
+--	tsamar.COUNT_UOM_CODE								as 'count_uom',
+--  tsamar.TEST_TYPE									as 'test_type', --Need to explore this field, do we need?
 	tsasampl.LAB_ASGND_ID_NUM							as 'lab_sample_id',
 	trim(tsalab.LAB_ID_NUMBER)							as 'elap_cert_num',
 	labnm.NAME											as 'lab_name',
