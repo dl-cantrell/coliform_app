@@ -42,7 +42,7 @@ water_systems <- function() {
 
 
 # sdwis coli query ------------------------------------------------------------------------------
-get_coli <- function(system, start_year, end_year) {
+get_coli <- function(system, start_date, end_date) {
   coli_query <- "
 with coliform_data as
 	(
@@ -140,10 +140,8 @@ order by sample_date"
   interpolated_query <- sqlInterpolate(sdwis_tdt, coli_query, sys = system)
     # Execute the query, with the filled in ?system from the step above
   coli_df <- as_tibble(dbGetQuery(sdwis_tdt, interpolated_query)) %>%
-      # Add a column for year
-    mutate(year = ymd(substr(sample_date, 1, 4), truncated = 2L)) %>%
-    filter(year >= start_year & year <= end_year )
-  # Select only rows within the year of of interest
+    filter(sample_date >= start_date & sample_date <= end_date )
+
 }
 
 #############################################################################################################################################
