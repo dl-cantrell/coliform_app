@@ -119,6 +119,53 @@ ui <- fluidPage(  #fluid page makes the pages dynamically expand to take up the 
                  
                  textOutput("selected_var")
                ),
+
+
+#coliform violations tab ------------------------------------------------------------------------------------------------------------------------------------------------------
+tabPanel(
+  "Coliform Violations by Water System",
+  fluidRow(
+    class = "searchPanel",
+    selectizeInput(
+      inputId = "sys_no_vio",
+      label = "Enter PWS No.",
+      choices = NULL,
+      options = list(maxOptions = 8000) # Adjust based on expected size
+    ),
+    selectizeInput(
+      inputId = "sys_name_vio",
+      label = "Enter PWS Name",
+      choices = NULL,
+      options = list(maxOptions = 8000) # Adjust based on expected size
+    )
+  ),
+  
+  
+  fluidRow(
+    actionButton(
+      inputId = "submit_vio",
+      label = "Run Query"
+    ) ),
+  
+  tags$i("Must run query before downloading csv- queries may take a moment to complete"),
+  
+  # download buttons
+  fluidRow(
+    downloadButton("download_csv_vio", "Download CSV") ) ,
+  
+  tags$hr(),
+  conditionalPanel(
+    condition = "output.noDataMsgVio == true",
+    tags$h3("No data returned for this water system and date range")
+  ),
+  withSpinner( plotlyOutput("vio_plot") ),
+  withSpinner( DT::dataTableOutput("coli_vio_table")), # with spinner makes a spinner go while the datatable is loading
+  
+  
+  #textOutput("selected_var")  
+  
+  
+),
                
 #map tab-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
                tabPanel( "Water System Numbers",
@@ -187,6 +234,48 @@ server <- function(input, output, session) {
         filter(water_system_name == input$sys_name) %>%
         pull(water_system_no)
       updateSelectizeInput(session, "sys_no", selected = sysno)
+    }
+  })
+  
+  
+  #Now for the violations tab, same as above (system number changes to reflect name choice and vice versa) --------------------------------------------
+  # if sys_no was changed last, update NAME
+  
+  # Initialize sys_no selectize input with server-side data
+  observe({
+    updateSelectizeInput(
+      session, "sys_no_vio",
+      choices = water_systems()$water_system_no,
+      server = TRUE
+    )
+  })
+  
+  # Initialize sys_name selectize input with server-side data
+  observe({
+    updateSelectizeInput(
+      session, "sys_name_vio",
+      choices = water_systems()$water_system_name,
+      server = TRUE
+    )
+  })
+  
+  
+  # Synchronize sys_no/sys_name
+  observeEvent(input$sys_no_vio, {
+    if (!is.null(input$sys_no_vio) && input$sys_no_vio != "") {
+      sysname <- water_systems() %>%
+        filter(water_system_no == input$sys_no_vio) %>%
+        pull(water_system_name)
+      updateSelectizeInput(session, "sys_name_vio", selected = sysname)
+    }
+  })
+  
+  observeEvent(input$sys_name_vio, {
+    if (!is.null(input$sys_name_vio) && input$sys_name_vio != "") {
+      sysno <- water_systems() %>%
+        filter(water_system_name == input$sys_name_vio) %>%
+        pull(water_system_no)
+      updateSelectizeInput(session, "sys_no_vio", selected = sysno)
     }
   })
   
