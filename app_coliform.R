@@ -22,8 +22,8 @@ library(leaflet)
 # shiny::reactlogShow() #run this line in the console AFTER running and then closing the app
 # these two lines of code will give you the reactive graph for your app
 
-source("connect_coliform.r") #how we are connecting to the SQL server
-source("functions_coliform.r") #defines several functions we are using here
+source("connect_coliform.R") #how we are connecting to the SQL server
+source("functions_coliform.R") #defines several functions we are using here
 
 #some data sources we need for the map tab:
 pws <- st_read("C:/Users/DCantrell/Desktop/pws_shapefiles/water_systems/water_systems_all.shp")
@@ -47,9 +47,23 @@ ui <- fluidPage(  #fluid page makes the pages dynamically expand to take up the 
                # Home tab
                tabPanel(
                  "Home",
-                 tags$h2("Welcome"),
-                 tags$b("Descriptive text about how to use this tool goes here- a link to a data dictionary
-           describing each column you can download from each tab should also go here")
+                 tags$h2("Welcome!"),
+                 tags$br(), #line break
+                 tags$b("This is a tool built to run queries of the Safe Drinking Water Information System (SDWIS) database for the state of California.
+                        Specifically, it will query coliform sample results for a user determined time period and water system.
+                        It can also pull coliform violations results by water system. Data goes back to 1974 and up to the day before the query is ran."),
+                 tags$br(), #line break
+                 tags$br(), #line break
+                 tags$b("Click on the tabs at the top of the page to toggle between coliform results by water system, coliform violations by water system, 
+                        and an interactive map you can use to determine the name and number of water systems across the state."),
+                 tags$br(), #line break
+                 tags$br(), #line break
+                 #create a direct download link
+                 tags$a(href = "https://view.officeapps.live.com/op/view.aspx?src=https%3A%2F%2Fraw.githubusercontent.com%2Fdl-cantrell%2Fcoliform_app%2Fmain%2Fcoliform_data_dictionary.xlsx&wdOrigin=BROWSELINK",
+                        
+                        "Download Data Dictionary", 
+                        target = "_blank",
+                        download = "coliform_data_dictionary.xlsx")
                ),
                
                #coliform results tab ------------------------------------------------------------------------------------------
