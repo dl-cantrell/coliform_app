@@ -26,7 +26,7 @@ source("connect_coliform.r") #how we are connecting to the SQL server
 source("functions_coliform.r") #defines several functions we are using here
 
 #some data sources we need for the map tab:
-pws <- st_read("C:/Users/DCantrell/Desktop/pws_shapefiles/water_systems_all.shp")
+pws <- st_read("C:/Users/DCantrell/Desktop/pws_shapefiles/water_systems/water_systems_all.shp")
 counties <- st_read("C:/Users/DCantrell/Desktop/pws_shapefiles/ca_counties/CA_Counties.shp")
 #Shapefile reprojection- want pws to match the priority area projections
 counties_utm <- st_transform(counties, st_crs(pws))
@@ -164,10 +164,10 @@ server <- function(input, output, session) {
   yr_sys_coli <- eventReactive(input$submit_coli_yr_sys, {
     # Call the function to get data based on system and year input
     system <- input$sys_no
-    start_year <- input$coli_yr[1]
-    end_year <- input$coli_yr[2]
+    start_date <- input$coli_yr[1]
+    end_date <- input$coli_yr[2]
     
-    get_coli(system, start_year, end_year)
+     get_coli(system, start_date, end_date)
   })
   
   # Reactive value to store the clicked date
@@ -177,7 +177,8 @@ server <- function(input, output, session) {
   output$ts_plot <- renderPlotly({
     req(nrow(yr_sys_coli()) > 0) # Ensure there are rows in the dataset
     
-    p <- ggplot(yr_sys_coli(), aes(x = as.Date(sample_date),  fill = presence, text = paste("Date:", sample_date, "<br>Presence:", presence))) +
+    p <- ggplot(yr_sys_coli(), aes(x = as.Date(sample_date), 
+                    fill = presence, text = paste("Date:", sample_date, "<br>Presence:", presence))) +
       scale_fill_manual(values = c("deepskyblue3", "red") ) +
       facet_wrap(~analyte_name) +
       geom_bar(width = 12, stat = "count" ) + # Adjust the width here
