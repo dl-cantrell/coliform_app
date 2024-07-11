@@ -66,7 +66,7 @@ ui <- fluidPage(  #fluid page makes the pages dynamically expand to take up the 
                         download = "coliform_data_dictionary.xlsx")
                ),
                
-               #coliform results tab ------------------------------------------------------------------------------------------
+#coliform results tab -----------------------------------------------------------------------------------------------------------------------------------------------------------------
                tabPanel(    
                  "Coliform Results by Water System",
                  dateRangeInput(
@@ -120,8 +120,27 @@ ui <- fluidPage(  #fluid page makes the pages dynamically expand to take up the 
                  textOutput("selected_var")
                ),
                
-               #map tab--------------------------------------------
+#map tab-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
                tabPanel( "Water System Numbers",
+                         tags$b("California water systems are regulated and tracked based on system classification and size. This is a single layer dataset for all 
+                               drinking water systems in California that was created by consolidating different data sources for water systems of all sizes."),
+                         tags$br(), #line break
+                         tags$br(), #line break
+                         tags$b("Information about how this layer was created:"),
+                         tags$br(), #line break
+                         tags$li( "The California Drinking Water System Area Boundaries (SABL) are publicly available. 
+                         SABL is the database of record for public drinking water systems.
+                         The locations are verified as the best available data and include over 4,000 water systems.
+                         Collecting and verifying SABL boundaries is an ongoing effort."),
+                         tags$li("There are public water systems (mostly non-community) that do not yet have a boundary in the SABL dataset. 
+                         These systems have been geocoded from their Physical Locations in the State Drinking Water Information System (SDWIS) portal, 
+                         with light data cleaning. Eventually these systems will be captured in SABL."),
+                         tags$li("State Small Water Systems are non-public water systems that are regulated by County health officials in partnership 
+                         with the State Water Board. These systems have been geocoded from their Physical Locations using the most recent County-provided data, 
+                         with light data cleaning. Eventually, these systems may be found in SABL."),
+                         tags$br(), #line break
+                         tags$a(href = "https://gispublic.waterboards.ca.gov/portal/home/item.html?id=346d649d1e654737ac5b6855466e89b2", 
+                                "Original layer hosted by the waterboards public GIS layers page", target = "_blank"),
                          withSpinner (leafletOutput("map", width = "100%", height = "800px"))  #adjust height and width of plot here
                ) 
   ) )
@@ -250,9 +269,6 @@ server <- function(input, output, session) {
   ######################################################################################################################
   #Plot Map
   
-  
-  
-  
   output$map <- renderLeaflet({
     
     leaflet() %>% 
@@ -272,7 +288,7 @@ server <- function(input, output, session) {
                   fillColor = "aliceblue", 
                   color = "darkblue",
                   layerId = ~pwsid,
-                  popup = ~paste("PWSID:", pwsid))
+                  popup = ~paste("PWS_ID:", pwsid, "<br>", "PWS_name:", system_nam))
     
   })
   
