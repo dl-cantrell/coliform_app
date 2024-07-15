@@ -176,7 +176,7 @@ get_vio <- function(sys_vio) {
 						and TMNVIOL.STATUS_TYPE_CODE = 'V'
 					    AND TMNVIOL.TMNVTYPE_ST_CODE = TMNVTYPE.TMNVTYPE_ST_CODE
 					inner join TSAANLYT on TMNVIOL.TSAANLYT_IS_NUMBER = TSAANLYT.TSAANLYT_IS_NUMBER
-							  and TSAANLYT.CODE = '8000' -- this is for coliform (revised total coliform rule)
+							  and TSAANLYT.CODE in ('8000', '3100', '3029','3013', '3000') -- this is for coliform (revised total coliform rule) and three other older coliform rules
 							--and TSAANLYT.CODE in ('2456', '2956', '1011')   -- this is for dbp's
 							AND TMNVIOL.TSAANLYT_IS_NUMBER = TSAANLYT.TSAANLYT_IS_NUMBER
 							--and (TMNVTYPE.TYPE_CODE = '01' or  TMNVTYPE.TYPE_CODE = '02') 

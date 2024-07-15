@@ -158,7 +158,7 @@ tabPanel(
     condition = "output.noDataMsgVio == true",
     tags$h3("No data returned for this water system and date range")
   ),
-  withSpinner( plotOutput("vio_plot") ),
+  withSpinner( plotlyOutput("vio_plot") ),
   withSpinner( DT::dataTableOutput("coli_vio_table")), # with spinner makes a spinner go while the datatable is loading
   
   
@@ -389,15 +389,21 @@ server <- function(input, output, session) {
   outputOptions(output, "noDataMsgVio", suspendWhenHidden = FALSE)
   
   # plot time series
- output$vio_plot <- renderPlot({
+ output$vio_plot <- renderPlotly({
     req(nrow(results_sys_vio()) > 0) # Ensure there are rows in the dataset
     
-    ggplot(results_sys_vio(), aes(x = year ) ) +
+a <-  ggplot(results_sys_vio(), aes(x = year ) ) +
       geom_bar() +
       labs(x = "year", y = "# of violations") +
       scale_x_discrete(breaks = pretty_breaks() ) 
     
-    
+# Print p to check if ggplot is generating the plot correctly
+print(a)
+
+a <- ggplotly(a)
+
+
+a
     
   })  
   
