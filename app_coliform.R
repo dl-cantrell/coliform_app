@@ -158,7 +158,7 @@ tabPanel(
     condition = "output.noDataMsgVio == true",
     tags$h3("No data returned for this water system and date range")
   ),
-  withSpinner( plotlyOutput("vio_plot") ),
+  withSpinner( plotOutput("vio_plot") ),
   withSpinner( DT::dataTableOutput("coli_vio_table")), # with spinner makes a spinner go while the datatable is loading
   
   
@@ -353,6 +353,53 @@ server <- function(input, output, session) {
     nrow(yr_sys_coli()) == 0
   })
   outputOptions(output, "noDataMsg", suspendWhenHidden = FALSE) 
+  
+  
+  ######################################################################################################################
+  # Coliform violations
+  
+  results_sys_vio <- eventReactive(input$submit_vio, {
+    # Call the function to get data based on system and year input
+    sys_vio <- input$sys_no_vio
+    yr_for_func_vio <- ymd(input$vio_yr, truncated = 2L)
+    get_vio(sys_vio)
+  } )
+  
+  output$coli_vio_table <- renderDataTable(
+    results_sys_vio(),
+    options = list(
+      pageLength = 500
+    )
+  )
+  
+  # Download CSV handler for DBP Violations
+  output$download_csv_vio <- downloadHandler(
+    filename = function() {
+      paste("coli_violations_data_", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(results_sys_vio(), file, row.names = FALSE)
+    }
+  )
+  
+  # Reactive value to check if there is data
+  output$noDataMsgVio <- reactive({
+    nrow(results_sys_vio()) == 0
+  })
+  outputOptions(output, "noDataMsgVio", suspendWhenHidden = FALSE)
+  
+  # plot time series
+ output$vio_plot <- renderPlot({
+    req(nrow(results_sys_vio()) > 0) # Ensure there are rows in the dataset
+    
+    ggplot(results_sys_vio(), aes(x = year ) ) +
+      geom_bar() +
+      labs(x = "year", y = "# of violations") +
+      scale_x_discrete(breaks = pretty_breaks() ) 
+    
+    
+    
+  })  
   
   
   ######################################################################################################################
