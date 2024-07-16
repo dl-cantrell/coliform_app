@@ -149,9 +149,10 @@ tabPanel(
   
   tags$i("Must run query before downloading csv- queries may take a moment to complete"),
   
+  
   # download buttons
   fluidRow(
-    downloadButton("download_csv_vio", "Download CSV") ) ,
+    downloadButton("download_csv_vio", "Download CSV")) ,
   
   tags$hr(),
   conditionalPanel(
@@ -166,7 +167,56 @@ tabPanel(
   
   
 ),
-               
+
+
+
+#coliform enforcement actions tab ------------------------------------------------------------------------------------------------------------------------------------------------------
+tabPanel(
+  "Coliform Enforcement Actions by Water System",
+  fluidRow(
+    class = "searchPanel",
+    selectizeInput(
+      inputId = "sys_no_ea",
+      label = "Enter PWS No.",
+      choices = NULL,
+      options = list(maxOptions = 8000) # Adjust based on expected size
+    ),
+    selectizeInput(
+      inputId = "sys_name_ea",
+      label = "Enter PWS Name",
+      choices = NULL,
+      options = list(maxOptions = 8000) # Adjust based on expected size
+    )
+  ),
+  
+  
+  fluidRow(
+    actionButton(
+      inputId = "submit_ea",
+      label = "Run Query"
+    ) ),
+  
+  tags$i("Must run query before downloading csv- queries may take a moment to complete"),
+  
+  # download buttons
+  fluidRow(
+    downloadButton("download_csv_ea", "Download CSV")) ,
+  
+  tags$hr(),
+  conditionalPanel(
+    condition = "output.noDataMsgEa == true",
+    tags$h3("No data returned for this water system and date range")
+  ),
+  withSpinner( plotlyOutput("ea_plot") ),
+  withSpinner( DT::dataTableOutput("coli_ea_table")), # with spinner makes a spinner go while the datatable is loading
+  
+  
+  #textOutput("selected_var")  
+  
+  
+),
+
+
 #map tab-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
                tabPanel( "Water System Numbers",
                          tags$b("California water systems are regulated and tracked based on system classification and size. This is a single layer dataset for all 
@@ -279,7 +329,50 @@ server <- function(input, output, session) {
     }
   })
   
-  # don't edit above this line for the server
+ 
+
+  #Now for the enforcement actions tab, same as above (system number changes to reflect name choice and vice versa) --------------------------------------------
+  # if sys_no was changed last, update NAME
+  
+  # Initialize sys_no selectize input with server-side data
+  observe({
+    updateSelectizeInput(
+      session, "sys_no_ea",
+      choices = water_systems()$water_system_no,
+      server = TRUE
+    )
+  })
+  
+  # Initialize sys_name selectize input with server-side data
+  observe({
+    updateSelectizeInput(
+      session, "sys_name_ea",
+      choices = water_systems()$water_system_name,
+      server = TRUE
+    )
+  })
+  
+  
+  # Synchronize sys_no/sys_name
+  observeEvent(input$sys_no_ea, {
+    if (!is.null(input$sys_no_ea) && input$sys_no_ea != "") {
+      sysname <- water_systems() %>%
+        filter(water_system_no == input$sys_no_ea) %>%
+        pull(water_system_name)
+      updateSelectizeInput(session, "sys_name_ea", selected = sysname)
+    }
+  })
+  
+  observeEvent(input$sys_name_ea, {
+    if (!is.null(input$sys_name_ea) && input$sys_name_ea != "") {
+      sysno <- water_systems() %>%
+        filter(water_system_name == input$sys_name_ea) %>%
+        pull(water_system_no)
+      updateSelectizeInput(session, "sys_no_ea", selected = sysno)
+    }
+  })
+  
+  # don't edit above this line for the server!!!!!!!!!!!!!!!############################################################
   
   ######################################################################################################################
   # coliform results
@@ -372,7 +465,7 @@ server <- function(input, output, session) {
     )
   )
   
-  # Download CSV handler for DBP Violations
+  # Download CSV handler for coliform Violations
   output$download_csv_vio <- downloadHandler(
     filename = function() {
       paste("coli_violations_data_", Sys.Date(), ".csv", sep = "")
@@ -406,6 +499,71 @@ a <- ggplotly(a)
 a
     
   })  
+ 
+ 
+ ######################################################################################################################
+ # Coliform enforcement actions
+ 
+ results_sys_ea <- eventReactive(input$submit_ea, {
+   # Call the function to get data based on system and year input
+   sys_ea <- input$sys_no_ea
+   yr_for_func_ea <- ymd(input$ea_yr, truncated = 2L)
+   get_ea(sys_ea)
+ } )
+ 
+ output$coli_ea_table <- renderDataTable(
+   results_sys_ea(),
+   options = list(
+     pageLength = 500
+   )
+ )
+ 
+ # Download CSV handler for enforcement actions
+ output$download_csv_ea <- downloadHandler(
+   filename = function() {
+     paste("coli_ea_data_", Sys.Date(), ".csv", sep = "")
+   },
+   content = function(file) {
+     write.csv(results_sys_ea(), file, row.names = FALSE)
+   }
+ )
+ 
+ # Reactive value to check if there is data
+ output$noDataMsgVio <- reactive({
+   nrow(results_sys_ea()) == 0
+ })
+ outputOptions(output, "noDataMsgVio", suspendWhenHidden = FALSE)
+ 
+ # plot time series
+  output$ea_plot <- renderPlotly({
+   req(nrow(results_sys_ea()) > 0) # Ensure there are rows in the dataset
+   
+    a <-  ggplot(results_sys_ea(), aes(x = year ) ) +
+     geom_bar() +
+     labs(x = "year", y = "# of ea's") +
+     scale_x_discrete(breaks = pretty_breaks() ) 
+   
+   # Print p to check if ggplot is generating the plot correctly
+   print(a)
+   
+   a <- ggplotly(a)
+ 
+   a
+   
+ })  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
   
   
   ######################################################################################################################
