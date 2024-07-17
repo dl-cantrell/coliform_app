@@ -144,26 +144,26 @@ order by sample_date"
 # sdwis violations query ------------------------------------------------------------------------------
 get_vio <- function(sys_vio) {
   vio_query <- "select distinct 
-					TINWSYS.NAME as PWS_NAME,
+					TINWSYS.NAME as water_system_name,
 					TINWSYS.NUMBER0 as water_system_no,
-					TMNVIOL.EXTERNAL_SYS_NUM as 'Violation ID',
-					--TMNVTYPE.TYPE_CODE as 'Violation Type',
-					TMNVTYPE.name as 'Violation Name',
-				    TMNVTYPE.CATEGORY_CODE as 'Violation Category',
+					TMNVIOL.EXTERNAL_SYS_NUM as 'violation_id',
+					--TMNVTYPE.TYPE_CODE as 'violation_type',
+					TMNVTYPE.name as 'violation_name',
+				    TMNVTYPE.CATEGORY_CODE as 'violation_category',
 					--TMNVIOL.STATUS_TYPE_CODE as 'Violation Status',
 					tmnviol.DETERMINATION_DATE as 'determination_date',
 					--tmnviol.STATE_PRD_BEGIN_DT as 'State Begin Date',
 					--tmnviol.STATE_PRD_END_DT as 'State End Date',
-					TMNVIOL.TINWSYS_IS_NUMBER as 'viol_connector',
-					tmnviol.TMNVIOL_IS_NUMBER as 'ea_connector',
-					tmnviol.EXCEEDENCES_CNT as 'number of exceedances',
-					tmnviol.SAMPLES_MISSNG_CNT as 'samples missing count',
-					tmnviol.SAMPLES_RQD_CNT as 'samples required',
-					tmnviol.ANALYSIS_RESULT_TE as 'Analysis Result',
-					TMNVIOL.ANALYSIS_RESULT_UO as 'Analysis Unit of Measure',
-					TSAANLYT.NAME as 'Analyte Name',
-					TSAANLYT.CODE as 'Analyte Code',
-					TMNVIOL.D_INITIAL_TS as 'Viol create date'
+				  --TMNVIOL.TINWSYS_IS_NUMBER as 'viol_connector',
+				  --tmnviol.TMNVIOL_IS_NUMBER as 'ea_connector',
+					tmnviol.EXCEEDENCES_CNT as 'number_of_exceedances',
+					tmnviol.SAMPLES_MISSNG_CNT as 'samples_missing_count',
+					tmnviol.SAMPLES_RQD_CNT as 'samples_required',
+					tmnviol.ANALYSIS_RESULT_TE as 'analysis_result',
+					TMNVIOL.ANALYSIS_RESULT_UO as 'analysis_units_of_measure',
+					TSAANLYT.NAME as 'analyte_name',
+					TSAANLYT.CODE as 'analyte_code',
+					TMNVIOL.D_INITIAL_TS as 'viol_create_date'
 					
 				--	TMNVIOL.D_INITIAL_USERID as 'User Name',
 					--TMNVIOL.TMNVTYPE_ST_CODE
@@ -207,12 +207,12 @@ get_ea <- function(sys_ea){
   ea_query <- "with pws as (		--public water system info
 					select Distinct
 					TINWSYS.TINWSYS_IS_NUMBER as 'connector',
-					TINLGENT.name as 'Regulating Agency',
+					TINLGENT.name as 'regulating_agency',
 					TINWSYS.NUMBER0 as 'water_system_no',
-					TINWSYS.NAME as 'Public Water System',
-					TINWSYS.ACTIVITY_STATUS_CD as 'Activity Status',
+					TINWSYS.NAME as 'water_system_name',
+					TINWSYS.ACTIVITY_STATUS_CD as 'activity_status',
 					tinwsys.D_PRIN_CNTY_SVD_NM as 'Principal County Served',
-					TINWSYS.D_PWS_FED_TYPE_CD as 'Federal Type',
+					TINWSYS.D_PWS_FED_TYPE_CD as 'federal_type',
 					tinwsys.D_POPULATION_COUNT as 'Population Count',
 					COUNT(TINWSYS.TINWSYS_IS_NUMBER) as 'total PWS'
 					
@@ -233,9 +233,9 @@ get_ea <- function(sys_ea){
 
 viol as (			-- violation information
 					select distinct 
-					TMNVIOL.EXTERNAL_SYS_NUM as 'Violation ID',
-					TMNVTYPE.TYPE_CODE as 'Violation Type',
-					TMNVTYPE.name as 'Violation Name',
+					TMNVIOL.EXTERNAL_SYS_NUM as 'violation_id',
+					TMNVTYPE.TYPE_CODE as 'violation_type',
+					TMNVTYPE.name as 'violation_name',
 					TMNVTYPE.CATEGORY_CODE as 'Violation Category',
 					TMNVIOL.STATUS_TYPE_CODE as 'Violation Status',
 					tmnviol.DETERMINATION_DATE as 'Determination Date',
@@ -248,8 +248,8 @@ viol as (			-- violation information
 					tmnviol.SAMPLES_RQD_CNT as 'samples requried',
 					tmnviol.ANALYSIS_RESULT_TE as 'Analysis Result',
 					TMNVIOL.ANALYSIS_RESULT_UO as 'Analysis Unit of Measure',
-					TSAANLYT.NAME as 'Analyte Name',
-					TSAANLYT.CODE as 'Analyte Code',
+					TSAANLYT.NAME as 'analyte_name',
+					TSAANLYT.CODE as 'analyte_code',
 					TMNVIOL.D_INITIAL_TS as 'Viol create date',
 					TMNVIOL.D_INITIAL_USERID as 'User Name',
 					TMNVIOL.TMNVTYPE_ST_CODE
@@ -277,7 +277,7 @@ viol as (			-- violation information
 				TENENACT.TENENACT_ST_CODE, 
 				TENACTYP.NAME as 'Enforcement Action Name',
 				TENENACT.TENENACT_IS_NUMBER, 
-				TENACTYP.LOCATION_TYPE_CODE+TENACTYP.FORMAL_TYPE_CODE+TENACTYP.SUB_CATEGORY_CODE AS 'Enforcement Action Code', 
+				TENACTYP.LOCATION_TYPE_CODE+TENACTYP.FORMAL_TYPE_CODE+TENACTYP.SUB_CATEGORY_CODE AS 'enforcement_action_code', 
 				TENENACT.STATUS_DATE AS 'enforcement_action_date', 
 				TENENACT.D_STATUS_CODE,
 				TENENACT.D_INITIAL_TS AS ENF_TS,
@@ -299,20 +299,20 @@ viol as (			-- violation information
 
 
 final as (select
-	pws.[Regulating Agency],
+	pws.[water_system_name],
 	pws.[water_system_no],
-	pws.[Public Water System],
-	pws.[Activity Status],
-	pws.[Federal Type],
-	viol.[Violation Name],
-	viol.[Violation Type],
-	viol.[Violation ID],
-	viol.[Analyte Name],
-	viol.[Analyte Code],
-	format(viol.[State Begin Date], 'yyyy-MM-dd') as ' Violation Begin Date',
-	format(viol.[State End Date], 'yyyy-MM-dd') as 'Violation End Date',
-	--viol.[Viol create date],
-	ea.[Enforcement Action Code],
+	pws.[regulating_agency],
+	pws.[activity_status],
+	pws.[federal_type],
+	viol.[violation_name],
+	viol.[violation_type],
+	viol.[violation_id],
+	viol.[analyte_name],
+	viol.[analyte_code],
+	format(viol.[State Begin Date], 'yyyy-MM-dd') as ' violation_begin_date',
+	format(viol.[State End Date], 'yyyy-MM-dd') as 'violation_end_date',
+	--viol.[violation_create_date],
+	ea.[enforcement_action_code],
 	format(ea.[EA Created Date], 'yyyy-MM-dd') as 'enforcement_action_date'--,
 
 
@@ -325,21 +325,21 @@ final as (select
 	union
 
 	select
-	pws.[Regulating Agency],
+	pws.[regulating_agency],
 	pws.[water_system_no],
-	pws.[Public Water System],
-	pws.[Activity Status],
-	pws.[Federal Type],
-	viol.[Violation Name],
-	viol.[Violation Type],
-	viol.[Violation ID],
-	viol.[Analyte Name],
-	viol.[Analyte Code],
-	format(viol.[State Begin Date], 'yyyy-MM-dd') as ' Violation Begin Date',
-	format(viol.[State End Date], 'yyyy-MM-dd') as 'Violation End Date',
+	pws.[water_system_name],
+	pws.[activity_status],
+	pws.[federal_type],
+	viol.[violation_name],
+	viol.[violation_type],
+	viol.[violation_id],
+	viol.[analyte_name],
+	viol.[analyte_code],
+	format(viol.[State Begin Date], 'yyyy-MM-dd') as ' violation_begin_date',
+	format(viol.[State End Date], 'yyyy-MM-dd') as 'violation_end_date',
 	--format(viol.[Viol create date],'yyyy-MM-dd') as '
-	ea.[Enforcement Action Code],
-	format(ea.[EA Created Date], 'yyyy-MM-dd') as 'Enforcement Action Date'--,
+	ea.[enforcement_action_code],
+	format(ea.[EA Created Date], 'yyyy-MM-dd') as 'enforcement_action_date'--,
 
 
 	from
@@ -355,9 +355,9 @@ final as (select
 	final
 
 	
-	where final.[Analyte Code] in ('8000', '3100', '3029','3013', '3000')
+	where final.[analyte_code] in ('8000', '3100', '3029','3013', '3000')
 	and final.[water_system_no] = ?sys
-	order by final.[Analyte Code]  "
+	order by final.[enforcement_action_date]  "
 
 # Interpolate the SQL query with parameters
 int_ea_query <- sqlInterpolate(sdwis_tdt, ea_query, sys = sys_ea)

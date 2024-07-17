@@ -529,10 +529,10 @@ a
  )
  
  # Reactive value to check if there is data
- output$noDataMsgVio <- reactive({
+ output$noDataMsgEa <- reactive({
    nrow(results_sys_ea()) == 0
  })
- outputOptions(output, "noDataMsgVio", suspendWhenHidden = FALSE)
+ outputOptions(output, "noDataMsgEa", suspendWhenHidden = FALSE)
  
  # plot time series
   output$ea_plot <- renderPlotly({
