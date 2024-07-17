@@ -212,7 +212,7 @@ get_ea <- function(sys_ea){
 					TINWSYS.NAME as 'water_system_name',
 					TINWSYS.ACTIVITY_STATUS_CD as 'activity_status',
 					tinwsys.D_PRIN_CNTY_SVD_NM as 'Principal County Served',
-					TINWSYS.D_PWS_FED_TYPE_CD as 'federal_type',
+					TINWSYS.D_PWS_FED_TYPE_CD as 'water_system_classification',
 					tinwsys.D_POPULATION_COUNT as 'Population Count',
 					COUNT(TINWSYS.TINWSYS_IS_NUMBER) as 'total PWS'
 					
@@ -303,7 +303,7 @@ final as (select
 	pws.[water_system_no],
 	pws.[regulating_agency],
 	pws.[activity_status],
-	pws.[federal_type],
+	pws.[water_system_classification],
 	viol.[violation_name],
 	viol.[violation_type],
 	viol.[violation_id],
@@ -328,8 +328,8 @@ final as (select
 	pws.[regulating_agency],
 	pws.[water_system_no],
 	pws.[water_system_name],
-	pws.[activity_status],
-	pws.[federal_type],
+--	pws.[activity_status],
+	pws.[water_system_classification],
 	viol.[violation_name],
 	viol.[violation_type],
 	viol.[violation_id],
