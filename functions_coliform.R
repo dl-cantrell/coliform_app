@@ -147,28 +147,20 @@ get_vio <- function(sys_vio) {
 					TINWSYS.NAME as water_system_name,
 					TINWSYS.NUMBER0 as water_system_no,
 					TMNVIOL.EXTERNAL_SYS_NUM as 'violation_id',
-					--TMNVTYPE.TYPE_CODE as 'violation_type',
+					TMNVTYPE.TYPE_CODE as 'violation_type',
 					TMNVTYPE.name as 'violation_name',
 				    TMNVTYPE.CATEGORY_CODE as 'violation_category',
 					--TMNVIOL.STATUS_TYPE_CODE as 'Violation Status',
-					tmnviol.DETERMINATION_DATE as 'determination_date',
-					--tmnviol.STATE_PRD_BEGIN_DT as 'State Begin Date',
-					--tmnviol.STATE_PRD_END_DT as 'State End Date',
-				  --TMNVIOL.TINWSYS_IS_NUMBER as 'viol_connector',
-				  --tmnviol.TMNVIOL_IS_NUMBER as 'ea_connector',
+					tmnviol.FED_PRD_BEGIN_DT as 'federal_begin_date',
+					tmnviol.FED_PRD_END_DT as 'federal_end_date',
 					tmnviol.EXCEEDENCES_CNT as 'number_of_exceedances',
 					tmnviol.SAMPLES_MISSNG_CNT as 'samples_missing_count',
 					tmnviol.SAMPLES_RQD_CNT as 'samples_required',
 					tmnviol.ANALYSIS_RESULT_TE as 'analysis_result',
 					TMNVIOL.ANALYSIS_RESULT_UO as 'analysis_units_of_measure',
 					TSAANLYT.NAME as 'analyte_name',
-					TSAANLYT.CODE as 'analyte_code',
-					TMNVIOL.D_INITIAL_TS as 'viol_create_date'
-					
-				--	TMNVIOL.D_INITIAL_USERID as 'User Name',
-					--TMNVIOL.TMNVTYPE_ST_CODE
-
-
+					TSAANLYT.CODE as 'analyte_code'
+						
 					from TMNVIOL
 					inner join TINWSYS on TINWSYS.TINWSYS_IS_NUMBER = TMNVIOL.TINWSYS_IS_NUMBER
 					AND TINWSYS.NUMBER0 = ?sys
@@ -185,8 +177,8 @@ get_vio <- function(sys_vio) {
 					left join TSAANGRP on TSAANGRP.TSAANGRP_IS_NUMBER = TMNVGRP.TSAANGRP_IS_NUMBER
 							and TSAANGRP.TSAANGRP_ST_CODE = TMNVGRP.TSAANGRP_ST_CODE  
 				
-					Where TINWSYS.NUMBER0 = ?sys
-					order by TINWSYS.NUMBER0"
+				--	Where TINWSYS.NUMBER0 = ?sys
+					order by tmnviol.FED_PRD_BEGIN_DT"
 
   
   # Interpolate the SQL query with parameters
@@ -194,7 +186,7 @@ get_vio <- function(sys_vio) {
   
   # Execute the query, with the filled in ?sys from the step above
   vio_df <- dbGetQuery(sdwis_tdt, int_vio_query)  %>%
-      mutate(year = substr(determination_date, 1, 4))
+      mutate(year = substr(federal_begin_date, 1, 4))
   
   
 }
@@ -238,9 +230,9 @@ viol as (			-- violation information
 					TMNVTYPE.name as 'violation_name',
 					TMNVTYPE.CATEGORY_CODE as 'Violation Category',
 					TMNVIOL.STATUS_TYPE_CODE as 'Violation Status',
-					tmnviol.DETERMINATION_DATE as 'Determination Date',
-					tmnviol.STATE_PRD_BEGIN_DT as 'State Begin Date',
-					tmnviol.STATE_PRD_END_DT as 'State End Date',
+					tmnviol.DETERMINATION_DATE as 'determination_date',
+					--tmnviol.STATE_PRD_BEGIN_DT as 'State Begin Date',
+					--tmnviol.STATE_PRD_END_DT as 'State End Date',
 					TMNVIOL.TINWSYS_IS_NUMBER as 'viol_connector',
 					tmnviol.TMNVIOL_IS_NUMBER as 'ea_connector',
 					tmnviol.EXCEEDENCES_CNT as 'number of exceedances',
@@ -250,7 +242,7 @@ viol as (			-- violation information
 					TMNVIOL.ANALYSIS_RESULT_UO as 'Analysis Unit of Measure',
 					TSAANLYT.NAME as 'analyte_name',
 					TSAANLYT.CODE as 'analyte_code',
-					TMNVIOL.D_INITIAL_TS as 'Viol create date',
+					--TMNVIOL.D_INITIAL_TS as 'Viol create date',
 					TMNVIOL.D_INITIAL_USERID as 'User Name',
 					TMNVIOL.TMNVTYPE_ST_CODE
 
@@ -309,8 +301,9 @@ final as (select
 	viol.[violation_id],
 	viol.[analyte_name],
 	viol.[analyte_code],
-	format(viol.[State Begin Date], 'yyyy-MM-dd') as ' violation_begin_date',
-	format(viol.[State End Date], 'yyyy-MM-dd') as 'violation_end_date',
+	viol.[determination_date],
+	--format(viol.[State Begin Date], 'yyyy-MM-dd') as ' violation_begin_date',
+	--format(viol.[State End Date], 'yyyy-MM-dd') as 'violation_end_date',
 	--viol.[violation_create_date],
 	ea.[enforcement_action_code],
 	format(ea.[EA Created Date], 'yyyy-MM-dd') as 'enforcement_action_date'--,
@@ -324,19 +317,20 @@ final as (select
 	
 	union
 
-	select
-	pws.[regulating_agency],
-	pws.[water_system_no],
+	select	
 	pws.[water_system_name],
---	pws.[activity_status],
+	pws.[water_system_no],
+	pws.[regulating_agency],
+	pws.[activity_status],
 	pws.[water_system_classification],
 	viol.[violation_name],
 	viol.[violation_type],
 	viol.[violation_id],
 	viol.[analyte_name],
 	viol.[analyte_code],
-	format(viol.[State Begin Date], 'yyyy-MM-dd') as ' violation_begin_date',
-	format(viol.[State End Date], 'yyyy-MM-dd') as 'violation_end_date',
+	viol.[determination_date],
+	--format(viol.[State Begin Date], 'yyyy-MM-dd') as ' violation_begin_date',
+	--format(viol.[State End Date], 'yyyy-MM-dd') as 'violation_end_date',
 	--format(viol.[Viol create date],'yyyy-MM-dd') as '
 	ea.[enforcement_action_code],
 	format(ea.[EA Created Date], 'yyyy-MM-dd') as 'enforcement_action_date'--,
@@ -357,14 +351,14 @@ final as (select
 	
 	where final.[analyte_code] in ('8000', '3100', '3029','3013', '3000')
 	and final.[water_system_no] = ?sys
-	order by final.[enforcement_action_date]  "
+	order by final.[determination_date] "
 
 # Interpolate the SQL query with parameters
 int_ea_query <- sqlInterpolate(sdwis_tdt, ea_query, sys = sys_ea)
 
 # Execute the query, with the filled in ?sys from the step above
 ea_df <- dbGetQuery(sdwis_tdt, int_ea_query)  %>%
-  mutate(year = substr(enforcement_action_date, 1, 4))
+  mutate(year = substr(determination_date, 1, 4))
   
   
 }
