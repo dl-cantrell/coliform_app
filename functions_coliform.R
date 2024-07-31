@@ -22,22 +22,44 @@ water_systems <- function() {
   # sdwis base query --------------------------------------------------------
   sdwis_base <- dbGetQuery(
     sdwis_tdt,
-    "SELECT DISTINCT TINWSYS.NAME as 'water_system_name', TRIM(TINWSYS.NUMBER0) as 'water_system_no', TINWSYS.ACTIVITY_STATUS_CD, srvCon.SumofSVC_CONNECT_CNT, TINWSYS.D_PWS_FED_TYPE_CD,
-                               TINLGENT.NAME AS Regulating_Agency                                          
-                            FROM (SELECT TINSCC.TINWSYS_IS_NUMBER, Sum(TINSCC.SVC_CONNECT_CNT) AS SumOfSVC_CONNECT_CNT 
+    "SELECT DISTINCT
+	TINWSYS.NAME as 'water_system_name', 
+	TRIM(TINWSYS.NUMBER0) as 'water_system_no', 
+	TINWSYS.ACTIVITY_STATUS_CD, 
+	srvCon.SumofSVC_CONNECT_CNT,
+	TINWSYS.D_PWS_FED_TYPE_CD,
+	TINLGENT.NAME AS Regulating_Agency                                          
+
+
+FROM (SELECT TINSCC.TINWSYS_IS_NUMBER, Sum(TINSCC.SVC_CONNECT_CNT) AS SumOfSVC_CONNECT_CNT 
                             		  FROM TINSCC GROUP BY TINSCC.TINWSYS_IS_NUMBER) AS srvCon
 
-                            INNER JOIN TINWSYS ON srvCon.TINWSYS_IS_NUMBER = TINWSYS.TINWSYS_IS_NUMBER
-                            INNER JOIN TINRAA ON TINWSYS.TINWSYS_IS_NUMBER = TINRAA.TINWSYS_IS_NUMBER AND TINRAA.ACTIVE_IND_CD = 'A'
-                            INNER JOIN TINLGENT ON TINRAA.TINLGENT_IS_NUMBER = TINLGENT.TINLGENT_IS_NUMBER
-                                   and (tinlgent.name like 'District%' or tinlgent.name like 'LPA%')
-                             
-                            WHERE TINWSYS.ACTIVITY_STATUS_CD = 'A'
-							 --and TINWSYS.D_PWS_FED_TYPE_CD <> 'NP'
-						ORDER BY TINWSYS.NAME"
+    INNER JOIN TINWSYS ON srvCon.TINWSYS_IS_NUMBER = TINWSYS.TINWSYS_IS_NUMBER
+    INNER JOIN TINRAA ON TINWSYS.TINWSYS_IS_NUMBER = TINRAA.TINWSYS_IS_NUMBER AND TINRAA.ACTIVE_IND_CD = 'A'
+    INNER JOIN TINLGENT ON TINRAA.TINLGENT_IS_NUMBER = TINLGENT.TINLGENT_IS_NUMBER
+         and (tinlgent.name like 'District%' or tinlgent.name like 'LPA%')
+                           
+     WHERE TINWSYS.ACTIVITY_STATUS_CD = 'A'
+	--and TINWSYS.D_PWS_FED_TYPE_CD <> 'NP'
+	 ORDER BY TINWSYS.NAME"
   )
 }
 
+
+county <- function() {
+  # county base query --------------------------------------------------------
+  county_base <- dbGetQuery(
+    sdwis_tdt,
+    "SELECT DISTINCT
+    tinwsys.D_PRIN_CNTY_SVD_NM AS 'county'
+FROM
+    TINWSYS
+WHERE
+    tinwsys.D_PRIN_CNTY_SVD_NM IS NOT NULL AND tinwsys.D_PRIN_CNTY_SVD_NM <> ''
+ORDER BY
+    tinwsys.D_PRIN_CNTY_SVD_NM"
+  )
+}
 
 # sdwis coli query ------------------------------------------------------------------------------
 get_coli <- function(system, start_date, end_date) {
@@ -146,6 +168,7 @@ get_vio <- function(sys_vio) {
   vio_query <- "select distinct 
 					TINWSYS.NAME as water_system_name,
 					TINWSYS.NUMBER0 as water_system_no,
+					TINLGENT.NAME as 'regulating_agency',
 					TMNVIOL.EXTERNAL_SYS_NUM as 'violation_id',
 					TMNVTYPE.TYPE_CODE as 'violation_type',
 					TMNVTYPE.name as 'violation_name',
@@ -160,10 +183,11 @@ get_vio <- function(sys_vio) {
 					TMNVIOL.ANALYSIS_RESULT_UO as 'analysis_units_of_measure',
 					TSAANLYT.NAME as 'analyte_name',
 					TSAANLYT.CODE as 'analyte_code'
+					
 						
 					from TMNVIOL
 					inner join TINWSYS on TINWSYS.TINWSYS_IS_NUMBER = TMNVIOL.TINWSYS_IS_NUMBER
-					AND TINWSYS.NUMBER0 = ?sys
+				--	AND TINWSYS.NUMBER0 = ?sys
 					inner join TMNVTYPE on TMNVIOL.TMNVTYPE_IS_NUMBER = TMNVTYPE.TMNVTYPE_IS_NUMBER
 						and TMNVIOL.STATUS_TYPE_CODE = 'V'
 					    AND TMNVIOL.TMNVTYPE_ST_CODE = TMNVTYPE.TMNVTYPE_ST_CODE
@@ -176,8 +200,11 @@ get_vio <- function(sys_vio) {
 							and TMNVGRP.TMNVGRP_ST_CODE = TMNVIOL.TMNVGRP_ST_CODE
 					left join TSAANGRP on TSAANGRP.TSAANGRP_IS_NUMBER = TMNVGRP.TSAANGRP_IS_NUMBER
 							and TSAANGRP.TSAANGRP_ST_CODE = TMNVGRP.TSAANGRP_ST_CODE  
+					inner join TINRAA on TINRAA.TINWSYS_IS_NUMBER = TINWSYS.TINWSYS_IS_NUMBER
+					inner join TINLGENT on TINRAA.TINLGENT_IS_NUMBER=TINLGENT.TINLGENT_IS_NUMBER
+						and (TINLGENT.name like 'District%' or TINLGENT.name like 'Lpa%')
 				
-				--	Where TINWSYS.NUMBER0 = ?sys
+					Where TINWSYS.NUMBER0 = ?sys
 					order by tmnviol.FED_PRD_BEGIN_DT"
 
   

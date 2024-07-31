@@ -16,8 +16,6 @@ library(sf)
 library(plyr)
 library(leaflet)
 
-#facility == "DST" only inside the query
-
 # reactlog::reactlog_enable() #run this line in the console before launching the app
 # shiny::reactlogShow() #run this line in the console AFTER running and then closing the app
 # these two lines of code will give you the reactive graph for your app
@@ -119,6 +117,56 @@ ui <- fluidPage(  #fluid page makes the pages dynamically expand to take up the 
                  
                  textOutput("selected_var")
                ),
+
+
+#coliform results by county tab -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+tabPanel(    
+  "Coliform Results by County",
+  dateRangeInput(
+    "coli_yr",
+    label = "Select Years:",
+    start = "2019-01-01", end = Sys.Date()
+  ),
+  
+  fluidRow(
+    class = "searchPanel",
+    selectizeInput(
+      inputId = "county",
+      label = "County",
+      choices = NULL,
+      options = list(maxOptions = 8000) # Adjust based on expected size
+    ),
+    
+      ),
+  
+  
+  tags$b("Write a line or two here describing why an MCL exceedence may not be a violation, and to use the 
+             violations tab to find actual violations"),
+  
+  fluidRow( 
+    actionButton(
+      inputId = "submit_coli_yr_county",
+      label = "Run Query"
+    )),
+  
+  tags$i("Must run query before downloading csv- queries may take a moment to complete"),
+  
+  # download buttons
+  fluidRow(
+    downloadButton("download_csv_coli", "Download CSV")),
+  
+  conditionalPanel(
+    condition = "output.noDataMsg == true",
+    tags$h3("No data returned for this water system and date range")
+  ),
+  
+  tags$hr(),
+ # withSpinner(plotlyOutput("ts_plot_county")), # Update plotOutput to plotlyOutput
+#  withSpinner(DT::dataTableOutput("coli_table_county")), # with spinner makes a spinner go while the datatable is loading
+  tags$hr(),
+  
+  textOutput("selected_var")
+),
 
 
 #coliform violations tab ------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -370,6 +418,18 @@ server <- function(input, output, session) {
         pull(water_system_no)
       updateSelectizeInput(session, "sys_no_ea", selected = sysno)
     }
+  })
+  
+  
+  #now for the by county tab
+  
+  # Initialize county input with server-side data
+  observe({
+    updateSelectizeInput(
+      session, "county",
+      choices = county()$county,
+      server = TRUE
+    )
   })
   
   # don't edit above this line for the server!!!!!!!!!!!!!!!############################################################
