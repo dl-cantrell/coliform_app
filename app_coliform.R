@@ -452,7 +452,7 @@ server <- function(input, output, session) {
   output$ts_plot <- renderPlotly({
     req(nrow(yr_sys_coli()) > 0) # Ensure there are rows in the dataset
     
-    p <- ggplot(yr_sys_coli(), aes(x = as.Date(sample_date), 
+    gg <- ggplot(yr_sys_coli(), aes(x = as.Date(sample_date), 
                     fill = presence, text = paste("Date:", sample_date, "<br>Presence:", presence))) +
       scale_fill_manual(values = c("deepskyblue3", "red") ) +
       facet_wrap(~analyte_name) +
@@ -461,17 +461,11 @@ server <- function(input, output, session) {
       xlab("Month and Year") +
       ylab("Count")
     
-    ggplotly(p, tooltip = "text") %>%
-      event_register("plotly_click")
+p <-    ggplotly(gg, tooltip = "text") 
+
+event_register(p, "plotly_click")
   })
-  
-  observeEvent(event_data("plotly_click"), {
-    click_data <- event_data("plotly_click")
-    req(click_data)
-    
-    clicked_date(as.Date(click_data$x))
-  })
-  
+
   output$coli_table <- renderDataTable({
     data <- yr_sys_coli()
     highlight_date <- clicked_date()
@@ -530,7 +524,7 @@ server <- function(input, output, session) {
   output$ts_plot_cnty <- renderPlotly({
     req(nrow(yr_cnty_coli()) > 0) # Ensure there are rows in the dataset
     
-    p <- ggplot(yr_cnty_coli(), aes(x = as.Date(sample_date), 
+    gg2 <- ggplot(yr_cnty_coli(), aes(x = as.Date(sample_date), 
                                    fill = presence, text = paste("Date:", sample_date, "<br>Presence:", presence))) +
       scale_fill_manual(values = c("deepskyblue3", "red") ) +
       facet_wrap(~analyte_name) +
@@ -539,18 +533,10 @@ server <- function(input, output, session) {
       xlab("Month and Year") +
       ylab("Count")
     
-    ggplotly(p, tooltip = "text") %>%
-      event_register("plotly_click")
+  p2 <-  ggplotly(gg2, tooltip = "text") 
+  
+  event_register(p2, "plotly_click")
   })
-  
-  observeEvent(event_data("plotly_click"), {
-    click_data <- event_data("plotly_click")
-    req(click_data)
-    
-    clicked_date(as.Date(click_data$x))
-  })
-  
-  
   
   output$coli_table_cnty <- renderDataTable({
     data <- yr_cnty_coli()
@@ -586,14 +572,6 @@ server <- function(input, output, session) {
     nrow(yr_cnty_coli()) == 0
   })
   outputOptions(output, "noDataMsgcnty", suspendWhenHidden = FALSE) 
-  
-  
-  
-  
-  
-  
-  
-  
   
   
   
@@ -634,20 +612,25 @@ server <- function(input, output, session) {
  output$vio_plot <- renderPlotly({
     req(nrow(results_sys_vio()) > 0) # Ensure there are rows in the dataset
     
-a <-  ggplot(results_sys_vio(), aes(x = year ) ) +
+gg3 <-  ggplot(results_sys_vio(), aes(x = year ) ) +
       geom_bar() +
       labs(x = "year", y = "# of violations") +
       scale_x_discrete(breaks = pretty_breaks() ) 
     
 # Print p to check if ggplot is generating the plot correctly
-print(a)
-ggplotly(a) %>%
-event_register("plotly_click")
+#print(a)
+p3 <- ggplotly(gg3)
+
+event_register(p3, "plotly_click")
 
 
 
-    
-  })  
+  })
+ 
+ 
+
+ 
+
  
  
  ######################################################################################################################
@@ -687,36 +670,21 @@ event_register("plotly_click")
   output$ea_plot <- renderPlotly({
    req(nrow(results_sys_ea()) > 0) # Ensure there are rows in the dataset
    
-    a <-  ggplot(results_sys_ea(), aes(x = year ) ) +
+  gg4 <-  ggplot(results_sys_ea(), aes(x = year ) ) +
      geom_bar() +
      labs(x = "year", y = "# of ea's") +
      scale_x_discrete(breaks = pretty_breaks() ) 
    
-   # Print p to check if ggplot is generating the plot correctly
-   print(a)
-   
-   ggplotly(a) %>%
-     event_register("plotly_click")
+  
+p4 <-   ggplotly(gg4)
+
+ event_register(p4, "plotly_click")
  
    
    
  })  
  
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-  
-  
-  ######################################################################################################################
+   ######################################################################################################################
   #Plot Map
   
   output$map <- renderLeaflet({
