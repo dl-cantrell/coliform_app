@@ -6,7 +6,7 @@ library(shinyWidgets)
 library(ggplot2)
 library(plotly) # Add this line
 
-#testing a commit and push after new token
+
 library(dbplyr)
 library(magrittr)
 library(pool)
@@ -119,12 +119,11 @@ ui <- fluidPage(  #fluid page makes the pages dynamically expand to take up the 
                  textOutput("selected_var")
                ),
 
-
 #coliform results by county tab -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 tabPanel(    
   "Coliform Results by County",
   dateRangeInput(
-    "coli_yr",
+    "coli_yr_cnty",
     label = "Select Years:",
     start = "2019-01-01", end = Sys.Date()
   ),
@@ -136,34 +135,34 @@ tabPanel(
       label = "County",
       choices = NULL,
       options = list(maxOptions = 8000) # Adjust based on expected size
-    ),
-    
-      ),
-  
+    )
+  ),
   
   tags$b("Write a line or two here describing why an MCL exceedence may not be a violation, and to use the 
              violations tab to find actual violations"),
   
   fluidRow( 
     actionButton(
-      inputId = "submit_coli_yr_county",
+      inputId = "submit_coli_yr_cnty",
       label = "Run Query"
-    )),
+    )
+  ),
   
   tags$i("Must run query before downloading csv- queries may take a moment to complete"),
   
   # download buttons
   fluidRow(
-    downloadButton("download_csv_coli", "Download CSV")),
+    downloadButton("download_csv_cnty", "Download CSV")
+  ),
   
   conditionalPanel(
     condition = "output.noDataMsg == true",
-    tags$h3("No data returned for this water system and date range")
+    tags$h3("No data returned for this county and date range")
   ),
   
   tags$hr(),
- # withSpinner(plotlyOutput("ts_plot_county")), # Update plotOutput to plotlyOutput
-#  withSpinner(DT::dataTableOutput("coli_table_county")), # with spinner makes a spinner go while the datatable is loading
+  withSpinner(plotlyOutput("ts_plot_cnty")), # Update plotOutput to plotlyOutput
+  withSpinner(DT::dataTableOutput("coli_table_cnty")), # with spinner makes a spinner go while the datatable is loading
   tags$hr(),
   
   textOutput("selected_var")
@@ -509,6 +508,101 @@ server <- function(input, output, session) {
   outputOptions(output, "noDataMsg", suspendWhenHidden = FALSE) 
   
   
+  
+  
+  
+  
+  
+  
+  
+  
+  ######################################################################################################################
+  # coliform results BY COUNTY
+  
+  yr_cnty_coli <- eventReactive(input$submit_coli_yr_cnty, {
+    # Call the function to get data based on county and year input
+    county <- input$county
+    start_date_cnty <- input$coli_yr_cnty[1]
+    end_date_cnty <- input$coli_yr_cnty[2]
+    
+    get_coli_cnty(county, start_date_cnty, end_date_cnty)
+  })
+  
+  # Reactive value to store the clicked date
+  clicked_date <- reactiveVal(NULL)
+  
+  
+  # plot time series
+  output$ts_plot_cnty <- renderPlotly({
+    req(nrow(yr_cnty_coli()) > 0) # Ensure there are rows in the dataset
+    
+    p <- ggplot(yr_cnty_coli(), aes(x = as.Date(sample_date), 
+                                   fill = presence, text = paste("Date:", sample_date, "<br>Presence:", presence))) +
+      scale_fill_manual(values = c("deepskyblue3", "red") ) +
+      facet_wrap(~analyte_name) +
+      geom_bar(width = 12, stat = "count" ) + # Adjust the width here
+      scale_x_date(date_breaks = "1 month", date_labels = "%m/%y") +
+      xlab("Month and Year") +
+      ylab("Count")
+    
+    ggplotly(p, tooltip = "text") %>%
+      event_register("plotly_click")
+  })
+  
+  observeEvent(event_data("plotly_click"), {
+    click_data <- event_data("plotly_click")
+    req(click_data)
+    
+    clicked_date(as.Date(click_data$x))
+  })
+  
+  
+  
+  output$coli_table_cnty <- renderDataTable({
+    data <- yr_cnty_coli()
+    highlight_date <- clicked_date()
+    
+    if (!is.null(highlight_date)) {
+      data <- data %>%
+        mutate(highlight = ifelse(as.Date(sample_date) == highlight_date, "highlight", ""))
+    } else {
+      data$highlight <- ""
+    }
+    
+    datatable(data, options = list(pageLength = 500), rownames = FALSE) %>%
+      formatStyle(
+        'highlight',
+        target = 'row',
+        backgroundColor = styleEqual(c("highlight", ""), c("yellow", ""))
+      )
+  })
+  
+  # Download CSV handler for coliform data
+  output$download_csv_cnty <- downloadHandler(
+    filename = function() {
+      paste("coliform_raw_data_by_county", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(yr_cnty_coli(), file, row.names = FALSE)
+    }
+  )
+  
+  # Reactive value to check if there is data
+  output$noDataMsg <- reactive({
+    nrow(yr_cnty_coli()) == 0
+  })
+  outputOptions(output, "noDataMsg", suspendWhenHidden = FALSE) 
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   ######################################################################################################################
   # Coliform violations
   
@@ -667,5 +761,3 @@ shinyApp(ui, server)
 
 
 
-
-shinyApp(ui = ui, server = server)
