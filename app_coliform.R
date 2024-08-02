@@ -116,7 +116,7 @@ ui <- fluidPage(  #fluid page makes the pages dynamically expand to take up the 
                  withSpinner(DT::dataTableOutput("coli_table")), # with spinner makes a spinner go while the datatable is loading
                  tags$hr(),
                  
-                 textOutput("selected_var")
+                # textOutput("selected_var")
                ),
 
 #coliform results by county tab -----------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -156,7 +156,7 @@ tabPanel(
   ),
   
   conditionalPanel(
-    condition = "output.noDataMsg == true",
+    condition = "output.noDataMsgcnty == true",
     tags$h3("No data returned for this county and date range")
   ),
   
@@ -510,12 +510,6 @@ server <- function(input, output, session) {
   
   
   
-  
-  
-  
-  
-  
-  
   ######################################################################################################################
   # coliform results BY COUNTY
   
@@ -588,10 +582,10 @@ server <- function(input, output, session) {
   )
   
   # Reactive value to check if there is data
-  output$noDataMsg <- reactive({
+  output$noDataMsgcnty <- reactive({
     nrow(yr_cnty_coli()) == 0
   })
-  outputOptions(output, "noDataMsg", suspendWhenHidden = FALSE) 
+  outputOptions(output, "noDataMsgcnty", suspendWhenHidden = FALSE) 
   
   
   
@@ -647,11 +641,11 @@ a <-  ggplot(results_sys_vio(), aes(x = year ) ) +
     
 # Print p to check if ggplot is generating the plot correctly
 print(a)
+ggplotly(a) %>%
+event_register("plotly_click")
 
-a <- ggplotly(a)
 
 
-a
     
   })  
  
@@ -701,9 +695,10 @@ a
    # Print p to check if ggplot is generating the plot correctly
    print(a)
    
-   a <- ggplotly(a)
+   ggplotly(a) %>%
+     event_register("plotly_click")
  
-   a
+   
    
  })  
  
