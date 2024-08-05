@@ -217,6 +217,48 @@ tabPanel(
 ),
 
 
+#coliform violations BY COUNTY tab ------------------------------------------------------------------------------------------------------------------------------------------------------
+tabPanel(
+  "Coliform Violations by County",
+  fluidRow(
+    class = "searchPanel",
+    selectizeInput(
+      inputId = "cnty_vio",
+      label = "County",
+      choices = NULL,
+      options = list(maxOptions = 8000) # Adjust based on expected size
+    )
+  ),
+  
+  
+  fluidRow(
+    actionButton(
+      inputId = "submit_vio_cnty",
+      label = "Run Query"
+    ) ),
+  
+  tags$i("Must run query before downloading csv- queries may take a moment to complete"),
+  
+  
+  # download buttons
+  fluidRow(
+    downloadButton("download_csv_vio", "Download CSV")) ,
+  
+  tags$hr(),
+  conditionalPanel(
+    condition = "output.noDataMsgVioCnty == true",
+    tags$h3("No data returned for this water system and date range")
+  ),
+ # withSpinner( plotlyOutput("vio_plot_cnty") ),
+  withSpinner( DT::dataTableOutput("coli_vio_table_cnty")), # with spinner makes a spinner go while the datatable is loading
+  
+  
+  #textOutput("selected_var")  
+  
+  
+),
+
+
 
 #coliform enforcement actions tab ------------------------------------------------------------------------------------------------------------------------------------------------------
 tabPanel(
@@ -421,9 +463,9 @@ server <- function(input, output, session) {
   })
   
   
-  #now for the by county tab
+  #now for the by county tabs
   
-  # Initialize county input with server-side data
+  # Initialize county input with server-side data for coliform results by county
   observe({
     updateSelectizeInput(
       session, "county",
@@ -431,6 +473,20 @@ server <- function(input, output, session) {
       server = TRUE
     )
   })
+  
+  
+  
+  
+  # Initialize county input with server-side data for violations by county
+  observe({
+    updateSelectizeInput(
+      session, "cnty_vio",
+      choices = county()$county,
+      server = TRUE
+    )
+  })
+  
+  
   
   # don't edit above this line for the server!!!!!!!!!!!!!!!############################################################
   
@@ -627,7 +683,96 @@ event_register(p3, "plotly_click")
 
   })
  
+
  
+ 
+ 
+ ######################################################################################################################
+ # Coliform violations BY COUNTY
+ 
+ results_cnty_vio <- eventReactive(input$submit_vio_cnty, {
+   # Call the function to get data based on system and year input
+   cnty_vio <- input$cnty_vio
+   yr_for_func_vio_cnty <- ymd(input$vio_yr_cnty, truncated = 2L)
+   get_vio_cnty(cnty_vio)
+ } )
+ 
+ output$coli_vio_table_cnty <- renderDataTable(
+   results_cnty_vio(),
+   options = list(
+     pageLength = 500
+   )
+ )
+ 
+ # Download CSV handler for coliform Violations
+ output$download_csv_vio_cnty <- downloadHandler(
+   filename = function() {
+     paste("coli_violations_data_", Sys.Date(), ".csv", sep = "")
+   },
+   content = function(file) {
+     write.csv(results_cnty_vio(), file, row.names = FALSE)
+   }
+ )
+ 
+ 
+   # Reactive value to check if there is data
+ output$noDataMsgVioCnty <- reactive({
+   nrow(results_cnty_vio()) == 0
+ })
+ outputOptions(output, "noDataMsgVioCnty", suspendWhenHidden = FALSE)
+ 
+ 
+ 
+ # plot time series
+ #output$vio_plot <- renderPlotly({
+  # req(nrow(results_sys_vio()) > 0) # Ensure there are rows in the dataset
+   
+  # gg3 <-  ggplot(results_sys_vio(), aes(x = year ) ) +
+   #  geom_bar() +
+    # labs(x = "year", y = "# of violations") +
+     #scale_x_discrete(breaks = pretty_breaks() ) 
+   
+   # Print p to check if ggplot is generating the plot correctly
+   #print(a)
+  # p3 <- ggplotly(gg3)
+   
+  # event_register(p3, "plotly_click")
+   
+#})
+   
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  
 
  
 
