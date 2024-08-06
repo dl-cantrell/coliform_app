@@ -67,7 +67,7 @@ ui <- fluidPage(  #fluid page makes the pages dynamically expand to take up the 
                
 #coliform results tab -----------------------------------------------------------------------------------------------------------------------------------------------------------------
                tabPanel(    
-                 "Coliform Results by Water System",
+                 "Results by Water System",
                  dateRangeInput(
                    "coli_yr",
                    label = "Select Years:",
@@ -121,7 +121,7 @@ ui <- fluidPage(  #fluid page makes the pages dynamically expand to take up the 
 
 #coliform results by county tab -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 tabPanel(    
-  "Coliform Results by County",
+  "Results by County",
   dateRangeInput(
     "coli_yr_cnty",
     label = "Select Years:",
@@ -171,7 +171,7 @@ tabPanel(
 
 #coliform violations tab ------------------------------------------------------------------------------------------------------------------------------------------------------
 tabPanel(
-  "Coliform Violations by Water System",
+  "Violations by Water System",
   fluidRow(
     class = "searchPanel",
     selectizeInput(
@@ -219,7 +219,7 @@ tabPanel(
 
 #coliform violations BY COUNTY tab ------------------------------------------------------------------------------------------------------------------------------------------------------
 tabPanel(
-  "Coliform Violations by County",
+  "Violations by County",
   fluidRow(
     class = "searchPanel",
     selectizeInput(
@@ -249,7 +249,7 @@ tabPanel(
     condition = "output.noDataMsgVioCnty == true",
     tags$h3("No data returned for this water system and date range")
   ),
- # withSpinner( plotlyOutput("vio_plot_cnty") ),
+  withSpinner( plotlyOutput("vio_plot_cnty") ),
   withSpinner( DT::dataTableOutput("coli_vio_table_cnty")), # with spinner makes a spinner go while the datatable is loading
   
   
@@ -262,7 +262,7 @@ tabPanel(
 
 #coliform enforcement actions tab ------------------------------------------------------------------------------------------------------------------------------------------------------
 tabPanel(
-  "Coliform Enforcement Actions by Water System",
+  "Enforcement Actions by Water System",
   fluidRow(
     class = "searchPanel",
     selectizeInput(
@@ -305,6 +305,50 @@ tabPanel(
   
   
 ),
+
+
+
+
+#coliform enforcement actions tab BY COUNTY ------------------------------------------------------------------------------------------------------------------------------------------------------
+tabPanel(
+  "Enforcement Actions by County",
+  fluidRow(
+    class = "searchPanel",
+    selectizeInput(
+      inputId = "cnty_ea",
+      label = "County",
+      choices = NULL,
+      options = list(maxOptions = 8000) # Adjust based on expected size
+    )
+  ),
+  
+  
+  fluidRow(
+    actionButton(
+      inputId = "submit_ea_cnty",
+      label = "Run Query"
+    ) ),
+  
+  tags$i("Must run query before downloading csv- queries may take a moment to complete"),
+  
+  # download buttons
+  fluidRow(
+    downloadButton("download_csv_ea", "Download CSV")) ,
+  
+  tags$hr(),
+  conditionalPanel(
+    condition = "output.noDataMsgEaCnty == true",
+    tags$h3("No data returned for this water system and date range")
+  ),
+  withSpinner( plotlyOutput("ea_plot_cnty") ),
+  withSpinner( DT::dataTableOutput("coli_ea_table_cnty")), # with spinner makes a spinner go while the datatable is loading
+  
+  
+  #textOutput("selected_var")  
+  
+  
+),
+
 
 
 #map tab-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -476,11 +520,20 @@ server <- function(input, output, session) {
   
   
   
-  
   # Initialize county input with server-side data for violations by county
   observe({
     updateSelectizeInput(
       session, "cnty_vio",
+      choices = county()$county,
+      server = TRUE
+    )
+  })
+  
+  
+  # Initialize county input with server-side data for EA by county
+  observe({
+    updateSelectizeInput(
+      session, "cnty_ea",
       choices = county()$county,
       server = TRUE
     )
@@ -724,61 +777,24 @@ event_register(p3, "plotly_click")
  
  
  # plot time series
- #output$vio_plot <- renderPlotly({
-  # req(nrow(results_sys_vio()) > 0) # Ensure there are rows in the dataset
+ output$vio_plot_cnty <- renderPlotly({
+   req(nrow(results_cnty_vio()) > 0) # Ensure there are rows in the dataset
    
-  # gg3 <-  ggplot(results_sys_vio(), aes(x = year ) ) +
-   #  geom_bar() +
-    # labs(x = "year", y = "# of violations") +
-     #scale_x_discrete(breaks = pretty_breaks() ) 
+   gg4 <-  ggplot(results_cnty_vio(), aes(x = year ) ) +
+     geom_bar() +
+     labs(x = "year", y = "# of violations") +
+     scale_x_discrete(breaks = pretty_breaks() ) 
    
    # Print p to check if ggplot is generating the plot correctly
-   #print(a)
-  # p3 <- ggplotly(gg3)
+   print(gg4)
+   p4 <- ggplotly(gg4)
    
-  # event_register(p3, "plotly_click")
+   event_register(p4, "plotly_click")
    
-#})
+})
    
 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-  
-
- 
-
- 
- 
- ######################################################################################################################
+  ######################################################################################################################
  # Coliform enforcement actions
  
  results_sys_ea <- eventReactive(input$submit_ea, {
@@ -828,8 +844,63 @@ p4 <-   ggplotly(gg4)
    
    
  })  
- 
-   ######################################################################################################################
+  
+  
+  
+  
+  ######################################################################################################################
+  # Coliform enforcement actions BY COUNTY
+  
+  results_cnty_ea <- eventReactive(input$submit_ea_cnty, {
+    # Call the function to get data based on system and year input
+    cnty_ea <- input$cnty_ea
+    yr_for_func_ea_cnty <- ymd(input$ea_yr_cnty, truncated = 2L)
+    get_ea_cnty(cnty_ea)
+  } )
+  
+  output$coli_ea_table_cnty <- renderDataTable(
+    results_cnty_ea(),
+    options = list(
+      pageLength = 500
+    )
+  )
+  
+  # Download CSV handler for enforcement actions
+  output$download_csv_ea_cnty <- downloadHandler(
+    filename = function() {
+      paste("coli_ea_data_", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(results_cnty_ea(), file, row.names = FALSE)
+    }
+  )
+  
+  # Reactive value to check if there is data
+  output$noDataMsgEaCnty <- reactive({
+    nrow(results_cnty_ea()) == 0
+  })
+  outputOptions(output, "noDataMsgEaCnty", suspendWhenHidden = FALSE)
+  
+  # plot time series
+  output$ea_plot_cnty <- renderPlotly({
+    req(nrow(results_cnty_ea()) > 0) # Ensure there are rows in the dataset
+    
+    gg5 <-  ggplot(results_cnty_ea(), aes(x = year ) ) +
+      geom_bar() +
+      labs(x = "year", y = "# of ea's") +
+      scale_x_discrete(breaks = pretty_breaks() ) 
+    
+    
+    p5 <-   ggplotly(gg5)
+    
+    event_register(p5, "plotly_click")
+    
+    
+    
+  })    
+  
+  
+  ######################################################################################################################
   #Plot Map
   
   output$map <- renderLeaflet({
